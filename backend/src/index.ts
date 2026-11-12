@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import mysql from "mysql12/promise";
+import mysql from "mysql2/promise";
 
 
 const db = mysql.createPool(process.env.DATABASE_URL!);
