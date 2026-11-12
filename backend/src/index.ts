@@ -28,60 +28,9 @@ for (let attempt = 1; ; attempt++) {
   }
 }
 
-function parseProduct(body: unknown): { name: string; cost: number } | null {
-  const { name, cost } = (body ?? {}) as Record<string, unknown>;
-  if (typeof name !== "string" || !Number.isInteger(cost)) return null;
-  return { name, cost: cost as number };
-}
 
 const app = express();
 // Allow a frontend dev server on another port (e.g. localhost:3000) to call the API.
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/product", async (_req, res) => {
-  const [products] = await db.query<Product[]>("SELECT id, name, cost FROM product ORDER BY id");
-  res.json(products);
-});
-
-app.post("/api/product", async (req, res) => {
-  const data = parseProduct(req.body);
-  if (!data) {
-    res.status(400).json({ message: "name and cost are required" });
-    return;
-  }
-
-  const [result] = await db.execute<ResultSetHeader>(
-    "INSERT INTO product (name, cost) VALUES (?, ?)",
-    [data.name, data.cost],
-  );
-  res.json({ id: result.insertId, ...data });
-});
-
-app.put("/api/product/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const [[product]] = await db.execute<Product[]>("SELECT id FROM product WHERE id = ?", [id]);
-  if (!product) {
-    res.status(404).json({ message: "Product does not exist" });
-    return;
-  }
-
-  const data = parseProduct(req.body);
-  if (!data) {
-    res.status(400).json({ message: "name and cost are required" });
-    return;
-  }
-
-  await db.execute("UPDATE product SET name = ?, cost = ? WHERE id = ?", [data.name, data.cost, id]);
-  res.json({ id, ...data });
-});
-
-app.delete("/api/product/:id", async (req, res) => {
-  await db.execute("DELETE FROM product WHERE id = ?", [Number(req.params.id)]);
-  res.json({ message: "Product was deleted permanently from DB." });
-});
-
-const port = Number(process.env.PORT ?? 3001);
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on http://0.0.0.0:${port}`);
-});
