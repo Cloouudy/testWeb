@@ -19,6 +19,7 @@ onMounted(async () => {
 
 <template>
   <main>
-    <h1>{{ statusText }}</h1>
+    <h1>Think different Academy</h1>
+    <h1>Status: {{ statusText }}</h1>
   </main>
 </template>
