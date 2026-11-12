@@ -10,9 +10,9 @@ onMounted(async () => {
     const data = await response.json()
     
     // Převede např. "ok" na "OK" a zobrazí požadovaný formát
-    statusText.value = `Status: ${data.status.toUpperCase()}`
+    statusText.value = `${data.status.toUpperCase()}`
   } catch (error) {
-    statusText.value = 'Status: Chyba připojení'
+    statusText.value = 'Chyba připojení'
   }
 })
 </script>
