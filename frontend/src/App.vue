@@ -4,17 +4,16 @@ import { ref, onMounted } from 'vue'
 const statusText = ref('Načítám status...')
 
 onMounted(async () => {
-  try {
-    // Upravte port podle toho, na jakém portu vám běží backend (např. 3001)
-    const response = await fetch('http://localhost:3001/api/v1/health')
-    const data = await response.json()
-    
-    // Převede např. "ok" na "OK" a zobrazí požadovaný formát
-    statusText.value = `${data.status.toUpperCase()}`
+try {
+    const response = await fetch('/api/v1/health');
+    const data = await response.json();
+    // Převede "ok" z JSONu na "OK"
+    status.value = data.status.toUpperCase();
   } catch (error) {
-    statusText.value = 'Chyba připojení'
+    status.value = 'Chyba připojení';
+    console.error(error);
   }
-})
+});
 </script>
 
 <template>
