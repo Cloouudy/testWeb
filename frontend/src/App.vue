@@ -5,7 +5,7 @@ const teamInfo = ref({ team_name: 'Načítám...', members: 'Načítám...' })
 
 onMounted(async () => {
   try {
-    const teamRes = await fetch('http://localhost:3001/api/v1/team')
+    const teamRes = await fetch('/api/v1/team')
     const teamData = await teamRes.json()
     teamInfo.value = teamData
   } catch (error) {
