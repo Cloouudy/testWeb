@@ -59,7 +59,7 @@ async function start() {
   if (rows[0].count === 0) {
     await db.query(
       "INSERT INTO team (team_name, members) VALUES (?, ?)",
-      ["Můj Tým", "Jindřich Poruba, Vilém Spáčil"] // Zde si upravte název týmu a členy
+      ["oavm warriors", "Jindřich Poruba, Vilém Spáčil"] // Zde si upravte název týmu a členy
     );
     console.log("Výchozí data týmu uložena do databáze.");
   }
