@@ -9,6 +9,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+app.get("/api/v1/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+
+
+
+
 // Endpoint pro načtení dat o týmu z databáze
 app.get("/api/v1/team", async (_req, res) => {
   try {
