@@ -96,7 +96,7 @@ async function start() {
     CREATE TABLE IF NOT EXISTS stops (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
-      lines VARCHAR(20) NOT NULL,
+      stop_lines VARCHAR(20) NOT NULL,
       is_transfer BOOLEAN NOT NULL DEFAULT FALSE,
       x DOUBLE NOT NULL,
       y DOUBLE NOT NULL,
