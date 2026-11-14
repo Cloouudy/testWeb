@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-// Import dejte na začátek scriptu
-import activitiesIcon from '../assets/icons/Think-different-Academy_LOGO_bily.svg'
+import academyLogo from './assets/icons/Think-different-Academy_LOGO_bily.svg'
 
 const teamInfo = ref({ team_name: 'Načítám...', members: 'Načítám...' })
 const status = ref('Načítám...')
@@ -29,10 +28,9 @@ onMounted(async () => {
   <div class="min-h-screen flex flex-col bg-gray-50 text-[#1A1A1A] font-['Dosis']">
     <header class="bg-[#0070BB] text-white p-4 shadow-md flex justify-between items-center">
       <div class="flex items-center gap-3">
-        <img :src="activitiesIcon" alt="Logo Think different Academy" class="w-8 h-8 object-contain" />
+        <img :src="academyLogo" alt="Think different Academy Logo" class="h-8 object-contain" />
         <h1 class="text-2xl font-bold">Think different Academy</h1>
       </div>
-      
       <div class="text-sm bg-white/10 px-3 py-1 rounded-lg">
         Status: <span class="font-semibold">{{ status }}</span>
       </div>
