@@ -93,7 +93,7 @@
       <!-- Prázdný stav filtru -->
       <div v-else-if="filteredStops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
         <div class="text-5xl mb-4">🔍</div>
-        <h2 class="text-2xl font-bold text-[#1A1A1A] mb-2">Žádná zastávka neodpovídá zvoleným filtrům</h2>
+        <h2 class="text-2xl font-bold text-[#1A1A1A] mb-2">Žádná zastávka neodpovídá zvoleným filtrům.</h2>
         <p class="text-gray-600 text-lg mb-6">Zkuste zmírnit kritéria vyhledávání.</p>
         <button
           @click="resetFilters"
