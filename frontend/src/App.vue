@@ -24,16 +24,23 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main style="padding: 20px;">
-    <h1>Think different Academy</h1>
-    <p>Status: {{ status }}</p>
-  </main>
-<div class="bg-blue-500 text-white p-4">Test</div>
+  <div class="min-h-screen flex flex-col bg-gray-50 text-[#1A1A1A] font-['Dosis']">
+    <header class="bg-[#0070BB] text-white p-4 shadow-md flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Think different Academy</h1>
+      <div class="text-sm bg-white/10 px-3 py-1 rounded-lg">
+        Status: <span class="font-semibold">{{ status }}</span>
+      </div>
+    </header>
 
 
-  <!-- Patička s údaji načtenými z databáze -->
-  <footer style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px;">
-    <p><strong>Název týmu:</strong> {{ teamInfo.team_name }}</p>
-    <p><strong>Členové:</strong> {{ teamInfo.members }}</p>
-  </footer>
+    <main class="flex-1">
+      <router-view />
+    </main>
+
+
+    <footer class="mt-auto border-t border-gray-200 bg-white py-4 px-6 text-sm text-gray-600 flex justify-between items-center">
+      <p><strong>Název týmu:</strong> {{ teamInfo.team_name }}</p>
+      <p><strong>Členové:</strong> {{ teamInfo.members }}</p>
+    </footer>
+  </div>
 </template>
