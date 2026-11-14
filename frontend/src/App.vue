@@ -28,6 +28,8 @@ onMounted(async () => {
     <h1>Think different Academy</h1>
     <p>Status: {{ status }}</p>
   </main>
+<div class="bg-blue-500 text-white p-4">Test</div>
+
 
   <!-- Patička s údaji načtenými z databáze -->
   <footer style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px;">
