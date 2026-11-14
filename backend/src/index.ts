@@ -3,7 +3,7 @@ import express from "express";
 import mysql from "mysql2/promise";
 import fs from "node:fs";
 import path from "node:path";
-import type { RowDataPacket } from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 const db = mysql.createPool(process.env.DATABASE_URL!);
 
@@ -23,9 +23,25 @@ function toCamelCase(text: string): string {
     .join("");
 }
 
+
+// prevedeni boolean z 0/1 (MySql) na format presne podle swaggeru
+function formatStop(row: RowDataPacket) {
+  return {
+    id: Number(row.id),
+    name: String(row.name),
+    image_url: row.image_url ?? null,
+    wheelchair_accessible: Boolean(row.wheelchair_accessible),
+    has_shelter: Boolean(row.has_shelter),
+    has_ticket_machine: Boolean(row.has_ticket_machine),
+  };
+}
+
+
 app.get("/api/v1/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+
 
 app.get("/api/v1/team", async (_req, res) => {
   try {
@@ -40,13 +56,123 @@ app.get("/api/v1/team", async (_req, res) => {
   }
 });
 
-// Endpoint pro načtení všech zastávek (hodí se pro kontrolu i pro frontend)
+// 1. GET /api/v1/stops – seznam všech zastávek (200 OK)
 app.get("/api/v1/stops", async (_req, res) => {
   try {
     const [rows] = await db.query<RowDataPacket[]>("SELECT * FROM stops ORDER BY id");
-    res.status(200).json(rows);
+    res.status(200).json(rows.map(formatStop));
   } catch (error) {
     console.error("Chyba při čtení zastávek z DB:", error);
+    res.status(500).json({ error: "Chyba serveru" });
+  }
+});
+
+// 2. GET /api/v1/stops/:id – detail konkrétní zastávky (200 OK)
+app.get("/api/v1/stops/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [rows] = await db.execute<RowDataPacket[]>("SELECT * FROM stops WHERE id = ?", [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Zastávka nenalezena" });
+    }
+    res.status(200).json(formatStop(rows[0]));
+  } catch (error) {
+    console.error("Chyba při čtení detailu zastávky:", error);
+    res.status(500).json({ error: "Chyba serveru" });
+  }
+});
+
+// 3. POST /api/v1/stops – vytvoření nové zastávky (201 Created)
+app.post("/api/v1/stops", async (req, res) => {
+  try {
+    const {
+      name,
+      image_url = null,
+      wheelchair_accessible,
+      has_shelter,
+      has_ticket_machine,
+    } = req.body;
+
+    if (
+      typeof name !== "string" ||
+      typeof wheelchair_accessible !== "boolean" ||
+      typeof has_shelter !== "boolean" ||
+      typeof has_ticket_machine !== "boolean"
+    ) {
+      return res.status(400).json({ error: "Neplatná vstupní data" });
+    }
+
+    const [result] = await db.execute<ResultSetHeader>(
+      `INSERT INTO stops (name, image_url, wheelchair_accessible, has_shelter, has_ticket_machine)
+      VALUES (?, ?, ?, ?, ?)`,
+      [name, image_url ?? null, wheelchair_accessible, has_shelter, has_ticket_machine]
+    );
+
+    const [rows] = await db.execute<RowDataPacket[]>(
+      "SELECT * FROM stops WHERE id = ?",
+      [result.insertId]
+    );
+
+    res.status(201).json(formatStop(rows[0]));
+  } catch (error) {
+    console.error("Chyba při vytváření zastávky:", error);
+    res.status(500).json({ error: "Chyba serveru" });
+  }
+});
+
+// 4. PUT /api/v1/stops/:id – nahrazení údajů existující zastávky (200 OK)
+app.put("/api/v1/stops/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const {
+      name,
+      image_url = null,
+      wheelchair_accessible,
+      has_shelter,
+      has_ticket_machine,
+    } = req.body;
+
+    if (
+      typeof name !== "string" ||
+      typeof wheelchair_accessible !== "boolean" ||
+      typeof has_shelter !== "boolean" ||
+      typeof has_ticket_machine !== "boolean"
+    ) {
+      return res.status(400).json({ error: "Neplatná vstupní data" });
+    }
+
+    const [result] = await db.execute<ResultSetHeader>(
+      `UPDATE stops
+      SET name = ?, image_url = ?, wheelchair_accessible = ?, has_shelter = ?, has_ticket_machine = ?
+      WHERE id = ?`,
+      [name, image_url ?? null, wheelchair_accessible, has_shelter, has_ticket_machine, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Zastávka nenalezena" });
+    }
+
+    const [rows] = await db.execute<RowDataPacket[]>("SELECT * FROM stops WHERE id = ?", [id]);
+    res.status(200).json(formatStop(rows[0]));
+  } catch (error) {
+    console.error("Chyba při úpravě zastávky:", error);
+    res.status(500).json({ error: "Chyba serveru" });
+  }
+});
+
+// 5. DELETE /api/v1/stops/:id – odstranění zastávky (204 No Content bez těla odpovědi)
+app.delete("/api/v1/stops/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [result] = await db.execute<ResultSetHeader>("DELETE FROM stops WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Zastávka nenalezena" });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Chyba při mazání zastávky:", error);
     res.status(500).json({ error: "Chyba serveru" });
   }
 });
@@ -92,20 +218,20 @@ async function start() {
   }
 
   // 2. Tabulka pro zastávky (opravené čárky)
-  await db.query(`
+await db.query(`
     CREATE TABLE IF NOT EXISTS stops (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
-      stop_lines VARCHAR(20) NOT NULL,
+      stop_lines VARCHAR(20) NOT NULL DEFAULT '',
       is_transfer BOOLEAN NOT NULL DEFAULT FALSE,
-      x DOUBLE NOT NULL,
-      y DOUBLE NOT NULL,
+      x DOUBLE NOT NULL DEFAULT 0,
+      y DOUBLE NOT NULL DEFAULT 0,
       wheelchair_accessible BOOLEAN NOT NULL DEFAULT FALSE,
       has_shelter BOOLEAN NOT NULL DEFAULT FALSE,
       has_bench BOOLEAN NOT NULL DEFAULT FALSE,
       has_ticket_machine BOOLEAN NOT NULL DEFAULT FALSE,
       has_display BOOLEAN NOT NULL DEFAULT FALSE,
-      image_url VARCHAR(255)
+      image_url VARCHAR(255) DEFAULT NULL
     )
   `);
 
