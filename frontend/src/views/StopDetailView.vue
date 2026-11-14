@@ -31,7 +31,7 @@
         </div>
 
         <div class="p-8">
-          <!-- Využití maskota žárovky (t-idea-white.svg) jako průvodce -->
+          <!-- Využití maskota žárovky jako průvodce -->
           <div class="flex items-center gap-4 bg-[#0070BB]/5 border border-[#0070BB]/20 p-4 rounded-2xl mb-8">
             <div class="w-14 h-14 rounded-xl bg-[#0070BB] flex items-center justify-center p-2 shadow-sm shrink-0">
               <img :src="tIdeaIcon" alt="Maskot žárovka" class="w-full h-full object-contain" />
@@ -78,8 +78,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-// Správný import SVG souboru s maskotem žárovky
-import tIdeaIcon from '@/assets/icons/t-idea-white.svg'
+// Použití bezpečné relativní cesty
+import tIdeaIcon from '../assets/icons/t-idea-white.svg'
 
 const route = useRoute()
 const stop = ref(null)

@@ -123,8 +123,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-// Správný import SVG souboru pro Vite bundler
-import activitiesIcon from '@/assets/icons/activities-white.svg'
+// Použití bezpečné relativní cesty ze složky views (z src/views do src/assets/icons)
+import activitiesIcon from '../assets/icons/activities-white.svg'
 
 const stops = ref([])
 const loading = ref(true)
