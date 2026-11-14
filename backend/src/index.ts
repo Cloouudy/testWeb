@@ -141,7 +141,7 @@ async function start() {
 
       await db.execute(
         `INSERT INTO stops (
-          id, name, lines, is_transfer, x, y,
+          id, name, stop_lines, is_transfer, x, y,
           wheelchair_accessible, has_shelter, has_bench, has_ticket_machine, has_display, image_url
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
