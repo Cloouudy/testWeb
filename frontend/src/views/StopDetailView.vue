@@ -1,7 +1,7 @@
 <template>
   <div class="w-full min-h-screen bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
     <div class="max-w-4xl mx-auto">
-      <!-- Tlačítko zpět -->
+      <!-- Tlačítko zpět na seznam -->
       <router-link to="/stops" class="inline-flex items-center gap-2 mb-6 text-[#0070BB] font-bold hover:underline">
         ← Zpět na přehled zastávek
       </router-link>
@@ -11,10 +11,16 @@
         Načítám detail zastávky...
       </div>
 
-      <!-- Pokud zastávka neexistuje -->
-      <div v-else-if="!stop" class="bg-white rounded-2xl shadow-md p-12 text-center border border-gray-100">
-        <h2 class="text-2xl font-bold text-red-500 mb-4">Zastávka nebyla nalezena</h2>
-        <router-link to="/stops" class="text-[#0070BB] underline font-semibold">Zpět na seznam zastávek</router-link>
+      <!-- Chybová zpráva / Neexistující zastávka -->
+      <div v-else-if="error || !stop" class="bg-white rounded-2xl shadow-md p-12 text-center border border-gray-100">
+        <div class="text-5xl mb-4">⚠️</div>
+        <h2 class="text-2xl font-bold text-red-600 mb-2">Zastávku se nepodařilo načíst</h2>
+        <p class="text-gray-600 mb-6">
+          {{ error || 'Požadovaná zastávka v systému neexistuje nebo server neodpovídá.' }}
+        </p>
+        <router-link to="/stops" class="inline-block px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl shadow-sm transition-colors">
+          Zpět na seznam zastávek
+        </router-link>
       </div>
 
       <!-- Detail zastávky -->
@@ -54,7 +60,7 @@
             </div>
           </div>
 
-          <!-- Vybavení v mřížce (3 položky bez lavičky) -->
+          <!-- Vybavení v mřížce (Bezbariérovost, Přístřešek, Automat na jízdenky) -->
           <h4 class="text-lg font-bold text-[#1A1A1A] mb-4">Vybavení</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <!-- Bezbariérová -->
@@ -81,12 +87,6 @@
               <span class="font-bold mt-1">{{ stop.has_ticket_machine ? 'Ano' : 'Ne' }}</span>
             </div>
           </div>
-
-          <!-- Souřadnice / Poloha -->
-          <div class="mt-8 pt-6 border-t border-gray-100 text-sm text-gray-500 flex justify-between">
-            <span>Souřadnice X: <strong class="text-gray-700">{{ stop.x }}</strong></span>
-            <span>Souřadnice Y: <strong class="text-gray-700">{{ stop.y }}</strong></span>
-          </div>
         </div>
       </div>
     </div>
@@ -100,15 +100,21 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const stop = ref(null)
 const loading = ref(true)
+const error = ref(null)
 
 onMounted(async () => {
   try {
     const id = route.params.id
     const res = await fetch(`/api/v1/stops/${id}`)
-    if (!res.ok) throw new Error('Zastávku se nepodařilo načíst')
+    
+    if (!res.ok) {
+      throw new Error(res.status === 404 ? 'Zastávka nebyla nalezena.' : 'Chyba při komunikaci se serverem.')
+    }
+    
     stop.value = await res.json()
   } catch (err) {
     console.error(err)
+    error.value = err.message || 'Nepodařilo se načíst data o zastávce.'
   } finally {
     loading.value = false
   }
