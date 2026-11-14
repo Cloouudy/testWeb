@@ -7,6 +7,9 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 const db = mysql.createPool(process.env.DATABASE_URL!);
 
+const ADMIN_API_KEY =
+  process.env.ADMIN_API_KEY ?? "Kyqc49jIM+5+D0Sed8ZQ671gxkd7W/bBTWjDtZ0Zrgk=";
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -25,6 +28,34 @@ app.use(
     next(err);
   }
 );
+
+
+
+
+// Middleware pro ověření administrátorského API klíče (Bearer schéma)
+function requireAdminAuth(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res
+      .status(401)
+      .json({ error: "Missing or invalid administrator API key" });
+  }
+
+  const token = authHeader.slice("Bearer ".length);
+
+  if (token !== ADMIN_API_KEY) {
+    return res
+      .status(401)
+      .json({ error: "Missing or invalid administrator API key" });
+  }
+
+  next();
+}
 
 function toCamelCase(text: string): string {
   return text
@@ -51,8 +82,8 @@ function formatStop(row: RowDataPacket) {
 }
 
 // Validace ID v URL (musí být celé číslo >= 1)
-function parseStopId(rawId: string): number | null {
-  if (!/^[1-9]\d*$/.test(rawId)) {
+function parseStopId(rawId: unknown): number | null {
+  if (typeof rawId !== "string" || !/^[1-9]\d*$/.test(rawId)) {
     return null;
   }
   const id = Number(rawId);
@@ -70,6 +101,9 @@ function validateStopInput(body: unknown): {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return null;
   }
+
+
+
 
   const record = body as Record<string, unknown>;
   const allowedKeys = new Set([
@@ -153,7 +187,7 @@ app.get("/api/v1/team", async (_req, res) => {
   }
 });
 
-// 1. GET /api/v1/stops – seznam všech zastávek (200 OK)
+// 1. GET /api/v1/stops – seznam všech zastávek (200 OK) – VEŘEJNÉ
 app.get("/api/v1/stops", async (_req, res) => {
   try {
     const [rows] = await db.query<RowDataPacket[]>(
@@ -166,7 +200,7 @@ app.get("/api/v1/stops", async (_req, res) => {
   }
 });
 
-// 2. GET /api/v1/stops/:id – detail konkrétní zastávky (200 / 400 / 404)
+// 2. GET /api/v1/stops/:id – detail konkrétní zastávky (200 / 400 / 404) – VEŘEJNÉ
 app.get("/api/v1/stops/:id", async (req, res) => {
   const id = parseStopId(req.params.id);
   if (id === null) {
@@ -188,8 +222,8 @@ app.get("/api/v1/stops/:id", async (req, res) => {
   }
 });
 
-// 3. POST /api/v1/stops – vytvoření nové zastávky (201 / 400)
-app.post("/api/v1/stops", async (req, res) => {
+// 3. POST /api/v1/stops – vytvoření nové zastávky (201 / 400 / 401) – CHRÁNĚNÉ
+app.post("/api/v1/stops", requireAdminAuth, async (req, res) => {
   const data = validateStopInput(req.body);
   if (!data) {
     return res.status(400).json({ error: "Invalid input data" });
@@ -220,8 +254,8 @@ app.post("/api/v1/stops", async (req, res) => {
   }
 });
 
-// 4. PUT /api/v1/stops/:id – nahrazení údajů existující zastávky (200 / 400 / 404)
-app.put("/api/v1/stops/:id", async (req, res) => {
+// 4. PUT /api/v1/stops/:id – nahrazení údajů existující zastávky (200 / 400 / 401 / 404) – CHRÁNĚNÉ
+app.put("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
   const id = parseStopId(req.params.id);
   if (id === null) {
     return res.status(400).json({ error: "Invalid stop ID" });
@@ -262,8 +296,8 @@ app.put("/api/v1/stops/:id", async (req, res) => {
   }
 });
 
-// 5. DELETE /api/v1/stops/:id – odstranění zastávky (204 / 400 / 404)
-app.delete("/api/v1/stops/:id", async (req, res) => {
+// 5. DELETE /api/v1/stops/:id – odstranění zastávky (204 / 400 / 401 / 404) – CHRÁNĚNÉ
+app.delete("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
   const id = parseStopId(req.params.id);
   if (id === null) {
     return res.status(400).json({ error: "Invalid stop ID" });
