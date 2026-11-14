@@ -38,7 +38,7 @@
             </div>
             <div>
               <h4 class="font-bold text-[#0070BB] text-lg">Průvodce zastávkou</h4>
-              <p class="text-sm text-gray-600">Detailní přehled dostupného vybavení a bezbariérového přístupu.</p>
+              <p class="text-sm text-gray-600">Detailní přehled dostupného vybavení a bezbariérového přístupu</p>
             </div>
           </div>
 
