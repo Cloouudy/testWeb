@@ -1,12 +1,11 @@
 <template>
   <div class="w-full min-h-screen bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
     <div class="w-full">
-      <!-- Hlavička s použitím ikony z vaší sady -->
+      <!-- Hlavička s oficiálním logem / ikonou -->
       <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200 pb-6">
         <div class="flex items-center gap-4">
           <div class="bg-[#0070BB] p-3 rounded-2xl shadow-md flex items-center justify-center">
-            <!-- Použití ikony pro aktivity/rozhraní -->
-            <img src="@/assets/icons/activities-white.svg" alt="Logo aktivity" class="w-8 h-8 object-contain" />
+            <img :src="activitiesIcon" alt="Logo aktivity" class="w-8 h-8 object-contain" />
           </div>
           <div>
             <h1 class="text-4xl md:text-5xl font-bold text-[#0070BB] mb-1">Seznam zastávek</h1>
@@ -124,6 +123,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+// Správný import SVG souboru pro Vite bundler
+import activitiesIcon from '@/assets/icons/activities-white.svg'
 
 const stops = ref([])
 const loading = ref(true)
