@@ -13,7 +13,7 @@
           <!-- Textové vyhledávání -->
           <div class="w-full lg:w-96">
             <label for="stop-search" class="block text-sm font-bold text-[#1A1A1A] mb-1.5">
-              Vyhledat podle názvu či linky
+              Vyhledat podle názvu
             </label>
             <div class="relative flex items-center">
               <span class="absolute left-3.5 text-[#0070BB] pointer-events-none">
@@ -25,7 +25,7 @@
                 id="stop-search"
                 v-model="searchQuery"
                 type="text"
-                placeholder="Např. Turing, linka A..."
+                placeholder="Např. Turing..."
                 class="w-full pl-11 pr-16 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-base text-[#1A1A1A] placeholder-gray-400 focus:outline-none focus:border-[#0070BB] focus:bg-white transition-all"
               />
               <button
@@ -53,7 +53,7 @@
           </div>
         </div>
 
-        <!-- Trychtýřové checkboxy (bez lavičky) -->
+        <!-- Trychtýřové checkboxy (bez přestupních uzlů a lavičky) -->
         <div class="pt-6">
           <span class="block text-sm font-bold text-[#1A1A1A] mb-3">Filtrovat podle vybavení:</span>
           <div class="flex flex-wrap gap-3">
@@ -73,12 +73,6 @@
                    :class="filters.ticketMachine ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
               <input type="checkbox" v-model="filters.ticketMachine" class="hidden" />
               <span>🎫 Jízdenkový automat</span>
-            </label>
-
-            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
-                   :class="filters.transfer ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
-              <input type="checkbox" v-model="filters.transfer" class="hidden" />
-              <span>🔄 Přestupní uzly</span>
             </label>
           </div>
         </div>
@@ -124,20 +118,12 @@
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               @error="handleImageError"
             />
-            <span v-if="stop.is_transfer" class="absolute top-2 right-2 bg-[#0070BB] text-white text-xs font-bold px-2.5 py-1 rounded-md shadow">
-              Přestupní
-            </span>
           </div>
 
           <div class="p-5 flex-1 flex flex-col justify-between">
-            <div>
-              <h3 class="text-xl font-bold text-[#0070BB] group-hover:text-[#0257A5] transition-colors line-clamp-1">
-                {{ stop.name }}
-              </h3>
-              <p v-if="stop.stop_lines" class="text-sm font-semibold text-gray-500 mt-1">
-                Linky: <span class="text-gray-700">{{ stop.stop_lines }}</span>
-              </p>
-            </div>
+            <h3 class="text-xl font-bold text-[#0070BB] group-hover:text-[#0257A5] transition-colors line-clamp-1">
+              {{ stop.name }}
+            </h3>
 
             <span class="mt-4 inline-flex items-center justify-center text-sm font-semibold text-[#0070BB] bg-[#0070BB]/10 py-2 rounded-lg w-full group-hover:bg-[#0070BB] group-hover:text-white transition-colors">
               Detail zastávky →
@@ -160,7 +146,6 @@ const filters = reactive({
   wheelchair: false,
   shelter: false,
   ticketMachine: false,
-  transfer: false,
 })
 
 const hasActiveFilters = computed(() => {
@@ -172,7 +157,6 @@ const resetFilters = () => {
   filters.wheelchair = false
   filters.shelter = false
   filters.ticketMachine = false
-  filters.transfer = false
 }
 
 const normalizeText = (text) => {
@@ -185,13 +169,11 @@ const filteredStops = computed(() => {
     if (filters.wheelchair && !stop.wheelchair_accessible) return false
     if (filters.shelter && !stop.has_shelter) return false
     if (filters.ticketMachine && !stop.has_ticket_machine) return false
-    if (filters.transfer && !stop.is_transfer) return false
 
     const query = normalizeText(searchQuery.value.trim())
     if (query) {
       const nameMatch = normalizeText(stop.name).includes(query)
-      const linesMatch = normalizeText(stop.stop_lines).includes(query)
-      if (!nameMatch && !linesMatch) return false
+      if (!nameMatch) return false
     }
 
     return true

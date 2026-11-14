@@ -29,39 +29,17 @@
         <div class="h-80 w-full relative bg-gray-200">
           <img :src="stop.image_url" :alt="stop.name" class="w-full h-full object-cover" @error="handleImageError" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-8">
-            <div>
-              <span v-if="stop.is_transfer" class="inline-block bg-[#0070BB] text-white text-xs font-bold px-3 py-1 rounded-md mb-2 shadow">
-                Přestupní uzel
-              </span>
-              <h1 class="text-4xl md:text-5xl font-bold text-white">{{ stop.name }}</h1>
-            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-white">{{ stop.name }}</h1>
           </div>
         </div>
 
-        <!-- Informace a parametry -->
+        <!-- Informace a vybavení -->
         <div class="p-8">
           <h3 class="text-2xl font-bold text-[#1A1A1A] mb-6 border-b border-gray-100 pb-3">
-            Informace a vybavení zastávky
+            Vybavení zastávky
           </h3>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Linky -->
-            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 flex items-center justify-between">
-              <span class="font-semibold text-gray-600">Obsluhované linky:</span>
-              <span class="font-bold text-[#0070BB] text-lg">{{ stop.stop_lines || 'Neuvedeno' }}</span>
-            </div>
-
-            <!-- Přestupní -->
-            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 flex items-center justify-between">
-              <span class="font-semibold text-gray-600">Přestupní zastávka:</span>
-              <span :class="stop.is_transfer ? 'text-green-600 font-bold' : 'text-gray-500 font-semibold'">
-                {{ stop.is_transfer ? 'Ano' : 'Ne' }}
-              </span>
-            </div>
-          </div>
-
           <!-- Vybavení v mřížce (Bezbariérovost, Přístřešek, Automat na jízdenky) -->
-          <h4 class="text-lg font-bold text-[#1A1A1A] mb-4">Vybavení</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <!-- Bezbariérová -->
             <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
