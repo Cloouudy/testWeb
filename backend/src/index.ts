@@ -63,6 +63,24 @@ async function start() {
     )
   `);
 
+await db.query(`
+  CREATE TABLE IF NOT EXISTS stops (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    image_url VARCHAR(255),
+    is_transfer BOOLEAN NOT NULL DEFAULT FALSE,
+    x DOUBLE NOT NULL,
+    y DOUBLE NOT NULL,
+    wheelchair_accessible BOOLEAN NOT NULL DEFAULT FALSE,
+    has_shelter BOOLEAN NOT NULL DEFAULT FALSE,
+    has_bench BOOLEAN NOT NULL DEFAULT FALSE,
+    has_ticket_machine BOOLEAN NOT NULL DEFAULT FALSE,
+    has_display BOOLEAN NOT NULL DEFAULT FALSE
+  )
+`);
+
+
+
   // Uložení výchozích dat, pokud je tabulka prázdná
   const [rows] = await db.query<RowDataPacket[]>("SELECT COUNT(*) as count FROM team");
   if (rows[0].count === 0) {
