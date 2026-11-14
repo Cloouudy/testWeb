@@ -1,7 +1,7 @@
 <template>
   <div class="w-full min-h-screen bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
     <div class="max-w-4xl mx-auto">
-      <!-- Tlačítko zpět na seznam -->
+      <!-- Tlačítko zpět -->
       <router-link to="/stops" class="inline-flex items-center gap-2 mb-6 text-[#0070BB] font-bold hover:underline">
         ← Zpět na přehled zastávek
       </router-link>
@@ -11,21 +11,18 @@
         Načítám detail zastávky...
       </div>
 
-      <!-- Chybová zpráva / Neexistující zastávka -->
+      <!-- Chybová zpráva -->
       <div v-else-if="error || !stop" class="bg-white rounded-2xl shadow-md p-12 text-center border border-gray-100">
         <div class="text-5xl mb-4">⚠️</div>
         <h2 class="text-2xl font-bold text-red-600 mb-2">Zastávku se nepodařilo načíst</h2>
-        <p class="text-gray-600 mb-6">
-          {{ error || 'Požadovaná zastávka v systému neexistuje nebo server neodpovídá.' }}
-        </p>
-        <router-link to="/stops" class="inline-block px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl shadow-sm transition-colors">
-          Zpět na seznam zastávek
+        <p class="text-gray-600 mb-6">{{ error || 'Požadovaná zastávka neexistuje.' }}</p>
+        <router-link to="/stops" class="inline-block px-6 py-3 bg-[#0070BB] text-white font-bold rounded-xl">
+          Zpět na seznam
         </router-link>
       </div>
 
-      <!-- Detail zastávky -->
+      <!-- Detail -->
       <div v-else class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-        <!-- Obrázek a hlavička -->
         <div class="h-80 w-full relative bg-gray-200">
           <img :src="stop.image_url" :alt="stop.name" class="w-full h-full object-cover" @error="handleImageError" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-8">
@@ -33,15 +30,24 @@
           </div>
         </div>
 
-        <!-- Informace a vybavení -->
         <div class="p-8">
+          <!-- Využití maskota žárovky (t-idea-white.svg) jako průvodce -->
+          <div class="flex items-center gap-4 bg-[#0070BB]/5 border border-[#0070BB]/20 p-4 rounded-2xl mb-8">
+            <div class="w-14 h-14 rounded-xl bg-[#0070BB] flex items-center justify-center p-2 shadow-sm shrink-0">
+              <img src="@/assets/icons/t-idea-white.svg" alt="Maskot žárovka" class="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h4 class="font-bold text-[#0070BB] text-lg">Průvodce zastávkou</h4>
+              <p class="text-sm text-gray-600">Detailní přehled dostupného vybavení a bezbariérového přístupu.</p>
+            </div>
+          </div>
+
           <h3 class="text-2xl font-bold text-[#1A1A1A] mb-6 border-b border-gray-100 pb-3">
             Vybavení zastávky
           </h3>
 
-          <!-- Vybavení v mřížce (Bezbariérovost, Přístřešek, Automat na jízdenky) -->
+          <!-- Grid vybavení -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <!-- Bezbariérová -->
             <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
                  :class="stop.wheelchair_accessible ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
               <span class="text-2xl mb-1">♿</span>
@@ -49,7 +55,6 @@
               <span class="font-bold mt-1">{{ stop.wheelchair_accessible ? 'Ano' : 'Ne' }}</span>
             </div>
 
-            <!-- Přístřešek -->
             <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
                  :class="stop.has_shelter ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
               <span class="text-2xl mb-1">🏠</span>
@@ -57,7 +62,6 @@
               <span class="font-bold mt-1">{{ stop.has_shelter ? 'Ano' : 'Ne' }}</span>
             </div>
 
-            <!-- Jízdenkový automat -->
             <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
                  :class="stop.has_ticket_machine ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
               <span class="text-2xl mb-1">🎫</span>
@@ -84,15 +88,11 @@ onMounted(async () => {
   try {
     const id = route.params.id
     const res = await fetch(`/api/v1/stops/${id}`)
-    
-    if (!res.ok) {
-      throw new Error(res.status === 404 ? 'Zastávka nebyla nalezena.' : 'Chyba při komunikaci se serverem.')
-    }
-    
+    if (!res.ok) throw new Error(res.status === 404 ? 'Zastávka nebyla nalezena.' : 'Chyba serveru.')
     stop.value = await res.json()
   } catch (err) {
     console.error(err)
-    error.value = err.message || 'Nepodařilo se načíst data o zastávce.'
+    error.value = err.message || 'Nepodařilo se načíst data.'
   } finally {
     loading.value = false
   }

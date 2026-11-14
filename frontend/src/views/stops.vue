@@ -1,32 +1,34 @@
 <template>
   <div class="w-full min-h-screen bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
     <div class="w-full">
-      <!-- Hlavička -->
-      <header class="mb-8">
-        <h1 class="text-4xl md:text-5xl font-bold text-[#0070BB] mb-2">Seznam zastávek</h1>
-        <p class="text-xl text-gray-600">Prozkoumejte jednotlivá zastavení na vaší cestě za poznáním.</p>
+      <!-- Hlavička s použitím ikony z vaší sady -->
+      <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200 pb-6">
+        <div class="flex items-center gap-4">
+          <div class="bg-[#0070BB] p-3 rounded-2xl shadow-md flex items-center justify-center">
+            <!-- Použití ikony pro aktivity/rozhraní -->
+            <img src="@/assets/icons/activities-white.svg" alt="Logo aktivity" class="w-8 h-8 object-contain" />
+          </div>
+          <div>
+            <h1 class="text-4xl md:text-5xl font-bold text-[#0070BB] mb-1">Seznam zastávek</h1>
+            <p class="text-xl text-gray-600">Prozkoumejte jednotlivá zastavení na vaší cestě za poznáním.</p>
+          </div>
+        </div>
       </header>
 
       <!-- VYHLEDÁVÁNÍ A TRYCHTÝŘOVÉ FILTRY -->
       <div v-if="!loading && stops.length > 0" class="bg-white rounded-2xl shadow-md p-6 mb-8 border border-gray-100">
         <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between pb-6 border-b border-gray-100">
-          <!-- Textové vyhledávání -->
           <div class="w-full lg:w-96">
             <label for="stop-search" class="block text-sm font-bold text-[#1A1A1A] mb-1.5">
               Vyhledat podle názvu
             </label>
             <div class="relative flex items-center">
-              <span class="absolute left-3.5 text-[#0070BB] pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
-                </svg>
-              </span>
               <input
                 id="stop-search"
                 v-model="searchQuery"
                 type="text"
                 placeholder="Např. Turing..."
-                class="w-full pl-11 pr-16 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-base text-[#1A1A1A] placeholder-gray-400 focus:outline-none focus:border-[#0070BB] focus:bg-white transition-all"
+                class="w-full pl-4 pr-16 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-base text-[#1A1A1A] placeholder-gray-400 focus:outline-none focus:border-[#0070BB] focus:bg-white transition-all"
               />
               <button
                 v-if="searchQuery"
@@ -38,7 +40,6 @@
             </div>
           </div>
 
-          <!-- Počítadlo a reset -->
           <div class="flex items-center justify-between w-full lg:w-auto gap-4">
             <span class="text-base font-semibold text-gray-700">
               Nalezeno: <strong class="text-[#0070BB] text-lg">{{ filteredStops.length }}</strong> z {{ stops.length }}
@@ -53,7 +54,7 @@
           </div>
         </div>
 
-        <!-- Trychtýřové checkboxy (bez přestupních uzlů a lavičky) -->
+        <!-- Trychtýřové checkboxy -->
         <div class="pt-6">
           <span class="block text-sm font-bold text-[#1A1A1A] mb-3">Filtrovat podle vybavení:</span>
           <div class="flex flex-wrap gap-3">
@@ -85,25 +86,11 @@
 
       <!-- Prázdný stav -->
       <div v-else-if="stops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
-        <div class="text-5xl mb-4">💡</div>
         <h2 class="text-2xl font-bold mb-2">Zatím zde nejsou žádné zastávky</h2>
         <p class="text-gray-500 text-lg">V systému se nenašly žádné evidované zastávky.</p>
       </div>
 
-      <!-- Prázdný stav filtru -->
-      <div v-else-if="filteredStops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
-        <div class="text-5xl mb-4">🔍</div>
-        <h2 class="text-2xl font-bold text-[#1A1A1A] mb-2">Žádná zastávka neodpovídá zvoleným filtrům.</h2>
-        <p class="text-gray-600 text-lg mb-6">Zkuste zmírnit kritéria vyhledávání.</p>
-        <button
-          @click="resetFilters"
-          class="px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
-        >
-          Zobrazit všechny zastávky
-        </button>
-      </div>
-
-      <!-- Seznam zastávek: 5 karet vedle sebe -->
+      <!-- Seznam zastávek (karty) -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         <router-link
           v-for="stop in filteredStops"
