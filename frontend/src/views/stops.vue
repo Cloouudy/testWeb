@@ -1,84 +1,121 @@
 <template>
   <div class="w-full min-h-screen bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
     <div class="w-full">
-      <!-- Hlavička a vyhledávací lišta dle brand manuálu -->
-      <header class="mb-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-        <div>
-          <h1 class="text-4xl md:text-5xl font-bold text-[#0070BB] mb-2">Seznam zastávek</h1>
-          <p class="text-xl text-gray-600">Prozkoumejte jednotlivá zastavení na vaší cestě za poznáním.</p>
-        </div>
+      <!-- Hlavička -->
+      <header class="mb-8">
+        <h1 class="text-4xl md:text-5xl font-bold text-[#0070BB] mb-2">Seznam zastávek</h1>
+        <p class="text-xl text-gray-600">Prozkoumejte jednotlivá zastavení, filtrujte podle vybavení a vlastností.</p>
+      </header>
 
-        <!-- Vyhledávací pole (zobrazí se, pokud systém eviduje nějaké zastávky) -->
-        <div v-if="!loading && stops.length > 0" class="w-full lg:w-[440px]">
-          <label for="stop-search" class="block text-sm font-semibold text-[#1A1A1A] mb-1.5">
-            Vyhledat zastávku podle názvu nebo vlastností
-          </label>
-          <div class="relative flex items-center">
-            <!-- Ikona lupy -->
-            <span class="absolute left-3.5 text-[#0070BB] pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
-              </svg>
+      <!-- TRYCHTÝŘOVÝ FILTR A VYHLEDÁVÁNÍ -->
+      <div v-if="!loading && stops.length > 0" class="bg-white rounded-2xl shadow-md p-6 mb-8 border border-gray-100">
+        <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between pb-6 border-b border-gray-100">
+          <!-- Textové vyhledávání -->
+          <div class="w-full lg:w-96">
+            <label for="stop-search" class="block text-sm font-bold text-[#1A1A1A] mb-1.5">
+              Vyhledat podle názvu či linky
+            </label>
+            <div class="relative flex items-center">
+              <span class="absolute left-3.5 text-[#0070BB] pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
+                </svg>
+              </span>
+              <input
+                id="stop-search"
+                v-model="searchQuery"
+                type="text"
+                placeholder="Např. Turing, linka A..."
+                class="w-full pl-11 pr-16 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-base text-[#1A1A1A] placeholder-gray-400 focus:outline-none focus:border-[#0070BB] focus:bg-white transition-all"
+              />
+              <button
+                v-if="searchQuery"
+                @click="searchQuery = ''"
+                class="absolute right-3 text-xs font-bold text-gray-400 hover:text-[#0070BB]"
+              >
+                ✕ Zrušit
+              </button>
+            </div>
+          </div>
+
+          <!-- Počítadlo a tlačítko pro reset filtrů -->
+          <div class="flex items-center justify-between w-full lg:w-auto gap-4">
+            <span class="text-base font-semibold text-gray-700">
+              Nalezeno: <strong class="text-[#0070BB] text-lg">{{ filteredStops.length }}</strong> z {{ stops.length }}
             </span>
-
-            <input
-              id="stop-search"
-              v-model="searchQuery"
-              type="text"
-              placeholder="Např. Turing, park, bezbariérový..."
-              class="w-full pl-11 pr-24 py-3 bg-white border-2 border-[#0070BB]/30 rounded-xl text-base text-[#1A1A1A] placeholder-gray-400 shadow-sm focus:outline-none focus:border-[#0070BB] focus:ring-4 focus:ring-[#91F5AD]/40 transition-all"
-            />
-
-            <!-- Tlačítko pro rychlé vymazání dotazu -->
             <button
-              v-if="searchQuery.trim().length > 0"
-              type="button"
-              @click="clearSearch"
-              class="absolute right-2 px-3 py-1.5 text-sm font-bold text-[#0070BB] bg-[#0070BB]/10 hover:bg-[#0070BB] hover:text-white rounded-lg transition-colors cursor-pointer"
-              title="Zrušit vyhledávání"
+              v-if="hasActiveFilters"
+              @click="resetFilters"
+              class="px-4 py-2 bg-gray-100 hover:bg-[#0070BB] hover:text-white text-gray-700 font-bold rounded-xl text-sm transition-colors cursor-pointer"
             >
-              Zrušit ✕
+              Resetovat filtry ↺
             </button>
           </div>
+        </div>
 
-          <!-- Počítadlo výsledků při aktivním hledání -->
-          <div v-if="searchQuery.trim().length > 0" class="mt-2 text-sm text-gray-600 flex items-center justify-between">
-            <span>
-              Nalezeno: <strong class="text-[#0070BB]">{{ filteredStops.length }}</strong> z {{ stops.length }} zastávek
-            </span>
+        <!-- Trychtýřové zaklikávací filtry (Vlastnosti zastávky) -->
+        <div class="pt-6">
+          <span class="block text-sm font-bold text-[#1A1A1A] mb-3">Filtrovat podle vybavení (trychtýř):</span>
+          <div class="flex flex-wrap gap-3">
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
+                   :class="filters.wheelchair ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
+              <input type="checkbox" v-model="filters.wheelchair" class="hidden" />
+              <span>♿ Bezbariérová</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
+                   :class="filters.shelter ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
+              <input type="checkbox" v-model="filters.shelter" class="hidden" />
+              <span>🏠 S přístřeškem</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
+                   :class="filters.bench ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
+              <input type="checkbox" v-model="filters.bench" class="hidden" />
+              <span>🪑 S lavičkou</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
+                   :class="filters.ticketMachine ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
+              <input type="checkbox" v-model="filters.ticketMachine" class="hidden" />
+              <span>🎫 Jízdenkový automat</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
+                   :class="filters.transfer ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
+              <input type="checkbox" v-model="filters.transfer" class="hidden" />
+              <span>🔄 Přestupní uzly</span>
+            </label>
           </div>
         </div>
-      </header>
+      </div>
 
       <!-- Načítání -->
       <div v-if="loading" class="text-center py-16 text-2xl font-semibold text-[#0070BB]">
         Načítám zastávky...
       </div>
 
-      <!-- Prázdný stav: Systém neeviduje vůbec žádné zastávky -->
+      <!-- Prázdný stav: Žádné zastávky v DB -->
       <div v-else-if="stops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
         <div class="text-5xl mb-4">💡</div>
         <h2 class="text-2xl font-bold mb-2">Zatím zde nejsou žádné zastávky</h2>
-        <p class="text-gray-500 text-lg">V systému se nenašly žádné evidované zastávky. Zkuste to prosím později.</p>
+        <p class="text-gray-500 text-lg">V systému se nenašly žádné evidované zastávky.</p>
       </div>
 
-      <!-- Prázdný stav vyhledávání: Žádná zastávka neodpovídá dotazu -->
+      <!-- Prázdný stav po filtrování -->
       <div v-else-if="filteredStops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
         <div class="text-5xl mb-4">🔍</div>
-        <h2 class="text-2xl font-bold text-[#1A1A1A] mb-2">Žádná zastávka neodpovídá vašemu hledání</h2>
-        <p class="text-gray-600 text-lg mb-6">
-          Pro dotaz <span class="font-bold text-[#0070BB]">„{{ searchQuery }}“</span> jsme nenašli žádnou shodu v názvu ani vlastnostech zastávek.
-        </p>
+        <h2 class="text-2xl font-bold text-[#1A1A1A] mb-2">Žádná zastávka neodpovídá zvoleným filtrům</h2>
+        <p class="text-gray-600 text-lg mb-6">Zkuste zmírnit kritéria vyhledávání nebo resetovat filtry.</p>
         <button
-          type="button"
-          @click="clearSearch"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+          @click="resetFilters"
+          class="px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
         >
-          Zobrazit všechny zastávky ({{ stops.length }})
+          Zobrazit všechny zastávky
         </button>
       </div>
 
-      <!-- Seznam zastávek: 1 na mobilu, 2 na tabletu, 3 na menším notebooku, 5 na široké obrazovce -->
+      <!-- Seznam zastávek (5 karet vedle sebe na velkém monitoru) -->
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         <router-link
           v-for="stop in filteredStops"
@@ -86,25 +123,60 @@
           :to="`/stops/${stop.id}`"
           class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group"
         >
-          <div class="h-44 overflow-hidden bg-gray-200 relative">
+          <!-- Obrázek -->
+          <div class="h-40 overflow-hidden bg-gray-200 relative">
             <img 
               :src="stop.image_url" 
               :alt="stop.name" 
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               @error="handleImageError"
             />
+            <span v-if="stop.is_transfer" class="absolute top-2 right-2 bg-[#0070BB] text-white text-xs font-bold px-2 py-1 rounded-md shadow">
+              Přestupní
+            </span>
           </div>
+
+          <!-- Obsah karty s popisem a vlastnostmi -->
           <div class="p-4 flex-1 flex flex-col justify-between">
             <div>
-              <h3 class="text-xl font-bold text-[#0070BB] group-hover:text-[#0257A5] transition-colors line-clamp-2">
+              <h3 class="text-lg font-bold text-[#0070BB] group-hover:text-[#0257A5] transition-colors line-clamp-1">
                 {{ stop.name }}
               </h3>
-              <!-- Krátká ukázka vlastností/popisu, pokud je k dispozici -->
-              <p v-if="stop.description" class="mt-1.5 text-sm text-gray-500 line-clamp-2">
-                {{ stop.description }}
+              
+              <p v-if="stop.stop_lines" class="text-xs font-semibold text-gray-500 mt-0.5">
+                Linky: <span class="text-gray-700">{{ stop.stop_lines }}</span>
               </p>
+
+              <!-- Seznam vlastností (popisek na kartě) -->
+              <div class="mt-3 space-y-1 text-xs border-t border-gray-100 pt-2.5 text-gray-600">
+                <div class="flex justify-between items-center">
+                  <span>Bezbariérové:</span>
+                  <span :class="stop.wheelchair_accessible ? 'text-green-600 font-bold' : 'text-gray-400'">
+                    {{ stop.wheelchair_accessible ? 'Ano' : 'Ne' }}
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span>Přístřešek:</span>
+                  <span :class="stop.has_shelter ? 'text-green-600 font-bold' : 'text-gray-400'">
+                    {{ stop.has_shelter ? 'Ano' : 'Ne' }}
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span>Lavička:</span>
+                  <span :class="stop.has_bench ? 'text-green-600 font-bold' : 'text-gray-400'">
+                    {{ stop.has_bench ? 'Ano' : 'Ne' }}
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span>Automat na jízdenky:</span>
+                  <span :class="stop.has_ticket_machine ? 'text-green-600 font-bold' : 'text-gray-400'">
+                    {{ stop.has_ticket_machine ? 'Ano' : 'Ne' }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span class="mt-4 inline-flex items-center text-sm font-semibold text-[#0070BB] bg-[#0070BB]/10 px-3 py-1.5 rounded-lg w-fit group-hover:bg-[#0070BB] group-hover:text-white transition-colors">
+
+            <span class="mt-4 inline-flex items-center justify-center text-xs font-semibold text-[#0070BB] bg-[#0070BB]/10 py-1.5 rounded-lg w-full group-hover:bg-[#0070BB] group-hover:text-white transition-colors">
               Detail zastávky →
             </span>
           </div>
@@ -115,44 +187,61 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 
 const stops = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
 
-// Pomocná funkce pro odstranění diakritiky a sjednocení velikosti písmen
-const normalizeText = (text) => {
-  if (!text) return ''
-  return String(text)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
-// Reaktivní filtrování podle názvu i všech textových vlastností zastávky
-const filteredStops = computed(() => {
-  const query = normalizeText(searchQuery.value.trim())
-  if (!query) return stops.value
-
-  // Rozdělení na slova umožňuje hledat i víceslovné kombinace (např. "park wifi")
-  const terms = query.split(/\s+/)
-
-  return stops.value.filter((stop) => {
-    // Sesbíráme všechny hodnoty vlastností zastávky (kromě image_url), aby šlo hledat i podle popisů, tagů, lokace apod.
-    const searchableContent = Object.entries(stop)
-      .filter(([key, val]) => key !== 'image_url' && val !== null && val !== undefined)
-      .map(([, val]) => (Array.isArray(val) ? val.join(' ') : typeof val === 'object' ? JSON.stringify(val) : String(val)))
-      .join(' ')
-
-    const normalizedStopText = normalizeText(searchableContent)
-    return terms.every((term) => normalizedStopText.includes(term))
-  })
+// Trychtýřové filtry
+const filters = reactive({
+  wheelchair: false,
+  shelter: false,
+  bench: false,
+  ticketMachine: false,
+  transfer: false,
 })
 
-const clearSearch = () => {
+const hasActiveFilters = computed(() => {
+  return searchQuery.value.trim() !== '' || Object.values(filters).some(val => val === true)
+})
+
+const resetFilters = () => {
   searchQuery.value = ''
+  filters.wheelchair = false
+  filters.shelter = false
+  filters.bench = false
+  filters.ticketMachine = false
+  filters.transfer = false
 }
+
+// Normalizace textu pro vyhledávání bez diakritiky
+const normalizeText = (text) => {
+  if (!text) return ''
+  return String(text).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+// Filtrování kombinující trychtýřové checkboxy i textové hledání
+const filteredStops = computed(() => {
+  return stops.value.filter((stop) => {
+    // 1. Trychtýřové filtry (musí splňovat všechny zaškrtnuté)
+    if (filters.wheelchair && !stop.wheelchair_accessible) return false
+    if (filters.shelter && !stop.has_shelter) return false
+    if (filters.bench && !stop.has_bench) return false
+    if (filters.ticketMachine && !stop.has_ticket_machine) return false
+    if (filters.transfer && !stop.is_transfer) return false
+
+    // 2. Textové vyhledávání (název nebo linky)
+    const query = normalizeText(searchQuery.value.trim())
+    if (query) {
+      const nameMatch = normalizeText(stop.name).includes(query)
+      const linesMatch = normalizeText(stop.stop_lines).includes(query)
+      if (!nameMatch && !linesMatch) return false
+    }
+
+    return true
+  })
+})
 
 const fetchStops = async () => {
   try {
