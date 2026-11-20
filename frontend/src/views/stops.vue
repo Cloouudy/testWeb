@@ -83,10 +83,30 @@
         Načítám zastávky...
       </div>
 
-      <!-- Prázdný stav -->
+      <!-- Prázdný stav (žádná data v DB) -->
       <div v-else-if="stops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
         <h2 class="text-2xl font-bold mb-2">Zatím zde nejsou žádné zastávky</h2>
         <p class="text-gray-500 text-lg">V systému se nenašly žádné evidované zastávky.</p>
+      </div>
+
+      <!-- Nenalezena žádná zastávka po filtrování / vyhledávání -->
+      <div v-else-if="filteredStops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
+        <div class="text-5xl mb-4">🔍</div>
+        <h2 v-if="searchQuery.trim()" class="text-2xl font-bold mb-2 text-[#1A1A1A]">
+          Nenalezena žádná zastávka „{{ searchQuery.trim() }}“
+        </h2>
+        <h2 v-else class="text-2xl font-bold mb-2 text-[#1A1A1A]">
+          Nenalezena žádná zastávka
+        </h2>
+        <p class="text-gray-500 text-lg mb-6">
+          Zkuste upravit hledaný výraz nebo změnit vybrané filtry vybavení.
+        </p>
+        <button
+          @click="resetFilters"
+          class="px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl transition-colors cursor-pointer"
+        >
+          Resetovat vyhledávání a filtry ↺
+        </button>
       </div>
 
       <!-- Seznam zastávek (karty) -->
@@ -123,7 +143,6 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-// Použití bezpečné relativní cesty ze složky views (z src/views do src/assets/icons)
 import activitiesIcon from '../assets/icons/activities-white.svg'
 
 const stops = ref([])
