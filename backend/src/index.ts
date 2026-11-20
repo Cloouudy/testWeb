@@ -75,9 +75,13 @@ function formatStop(row: RowDataPacket) {
     id: Number(row.id),
     name: String(row.name),
     image_url: row.image_url ?? null,
+    stop_lines: String(row.stop_lines),
+    is_transfer: Boolean(row.is_transfer),
     wheelchair_accessible: Boolean(row.wheelchair_accessible),
+    has_bench: Boolean(row.has_bench),
     has_shelter: Boolean(row.has_shelter),
     has_ticket_machine: Boolean(row.has_ticket_machine),
+    has_display: Boolean(row.has_display),
   };
 }
 
@@ -94,9 +98,13 @@ function parseStopId(rawId: unknown): number | null {
 function validateStopInput(body: unknown): {
   name: string;
   image_url: string | null;
+  stop_lines: string;
+  is_transfer: boolean;
   wheelchair_accessible: boolean;
+  has_bench: boolean,
   has_shelter: boolean;
   has_ticket_machine: boolean;
+  has_display: boolean
 } | null {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return null;
@@ -109,9 +117,13 @@ function validateStopInput(body: unknown): {
   const allowedKeys = new Set([
     "name",
     "image_url",
+    "stop_lines",
+    "is_transfer",
     "wheelchair_accessible",
+    "has_bench",
     "has_shelter",
     "has_ticket_machine",
+    "has_display"
   ]);
 
   // Zákaz polí, která nejsou ve specifikaci (additionalProperties: false)
@@ -124,9 +136,13 @@ function validateStopInput(body: unknown): {
   const {
     name,
     image_url,
+    stop_lines,
+    is_transfer,
     wheelchair_accessible,
+    has_bench,
     has_shelter,
     has_ticket_machine,
+    has_display
   } = record;
 
   // 1. Validace name (neprázdný string max 255 znaků)
@@ -138,11 +154,23 @@ function validateStopInput(body: unknown): {
     return null;
   }
 
+
+  if (
+    typeof stop_lines !== "string" ||
+    stop_lines.trim().length === 0 ||
+    stop_lines.length > 30
+  ) {
+    return null
+  }
+
   // 2. Validace boolean polí
   if (
     typeof wheelchair_accessible !== "boolean" ||
+    typeof has_bench !== "boolean" ||
     typeof has_shelter !== "boolean" ||
-    typeof has_ticket_machine !== "boolean"
+    typeof has_ticket_machine !== "boolean" ||
+    typeof is_transfer !== "boolean" ||
+    typeof has_display !== "boolean" 
   ) {
     return null;
   }
@@ -164,9 +192,13 @@ function validateStopInput(body: unknown): {
   return {
     name,
     image_url: normalizedImageUrl,
+    stop_lines,
+    is_transfer,
     wheelchair_accessible,
+    has_bench,
     has_shelter,
     has_ticket_machine,
+    has_display
   };
 }
 
