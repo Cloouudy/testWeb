@@ -25,62 +25,91 @@
       <div v-else class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
         <div class="h-80 w-full relative bg-gray-200">
           <img :src="stop.image_url" :alt="stop.name" class="w-full h-full object-cover" @error="handleImageError" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-lg">{{ stop.stop_lines }}</h1><h1 class="text-4xl md:text-5xl font-bold text-white">{{ stop.name }}</h1>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent flex items-end p-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white drop-shadow-sm">{{ stop.name }}</h1>
           </div>
         </div>
 
-        <div class="p-8">
+        <div class="p-8 space-y-6">
+          <!-- Políčko linky / linek -->
+          <div class="flex flex-wrap items-center justify-between gap-4 bg-[#0070BB]/5 border border-[#0070BB]/20 px-5 py-4 rounded-2xl">
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-[#0070BB] text-lg">Linka</span>
+            </div>
+
+            <div v-if="stop.stop_lines && stop.stop_lines.trim()" class="flex flex-wrap gap-2">
+              <span
+                v-for="(line, index) in stop.stop_lines.split(',')"
+                :key="`${line.trim()}-${index}`"
+                class="px-3.5 py-1 bg-[#0070BB] text-white font-bold text-base rounded-xl shadow-sm"
+              >
+                {{ line.trim() }}
+              </span>
+            </div>
+            <span v-else class="px-3.5 py-1 bg-gray-200 text-gray-600 font-semibold text-sm rounded-xl">
+              Neuvedeno
+            </span>
+          </div>
+
           <!-- Využití maskota žárovky jako průvodce -->
-          <div class="flex items-center gap-4 bg-[#0070BB]/5 border border-[#0070BB]/20 p-4 rounded-2xl mb-8">
+          <div class="flex items-center gap-4 bg-[#0070BB]/5 border border-[#0070BB]/20 p-4 rounded-2xl">
             <div class="w-14 h-14 rounded-xl bg-[#0070BB] flex items-center justify-center p-2 shadow-sm shrink-0">
               <img :src="tIdeaIcon" alt="Maskot žárovka" class="w-full h-full object-contain" />
             </div>
             <div>
               <h4 class="font-bold text-[#0070BB] text-lg">Průvodce zastávkou</h4>
-              <p class="text-sm text-gray-600">Detailní přehled dostupného vybavení a bezbariérového přístupu.</p>
+              <p class="text-sm text-gray-600">Detailní přehled obsluhujících linek, dostupného vybavení a bezbariérového přístupu.</p>
             </div>
           </div>
 
-          <h3 class="text-2xl font-bold text-[#1A1A1A] mb-6 border-b border-gray-100 pb-3">
-            Vybavení zastávky
-          </h3>
+          <div>
+            <h3 class="text-2xl font-bold text-[#1A1A1A] mb-5 border-b border-gray-100 pb-3">
+              Vybavení a vlastnosti zastávky
+            </h3>
 
-          <!-- Grid vybavení -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
-                 :class="stop.wheelchair_accessible ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1">♿</span>
-              <span class="text-sm font-semibold">Bezbariérová</span>
-              <span class="font-bold mt-1">{{ stop.wheelchair_accessible ? 'Ano' : 'Ne' }}</span>
-            </div>
+            <!-- Grid vybavení (6 položek = 2 symetrické řady po 3 na větších displejích) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
+                   :class="stop.wheelchair_accessible ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
+                <span class="text-2xl mb-1">♿</span>
+                <span class="text-sm font-semibold">Bezbariérová</span>
+                <span class="font-bold mt-1">{{ stop.wheelchair_accessible ? 'Ano' : 'Ne' }}</span>
+              </div>
 
-            <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
-                 :class="stop.has_shelter ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1">🏠</span>
-              <span class="text-sm font-semibold">Přístřešek</span>
-              <span class="font-bold mt-1">{{ stop.has_shelter ? 'Ano' : 'Ne' }}</span>
-            </div>
+              <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
+                   :class="stop.has_shelter ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
+                <span class="text-2xl mb-1">🏠</span>
+                <span class="text-sm font-semibold">Přístřešek</span>
+                <span class="font-bold mt-1">{{ stop.has_shelter ? 'Ano' : 'Ne' }}</span>
+              </div>
 
-            <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
-                 :class="stop.has_ticket_machine ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1">🎫</span>
-              <span class="text-sm font-semibold">Automat na jízdenky</span>
-              <span class="font-bold mt-1">{{ stop.has_ticket_machine ? 'Ano' : 'Ne' }}</span>
-            </div>
+              <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
+                   :class="stop.has_ticket_machine ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
+                <span class="text-2xl mb-1">🎫</span>
+                <span class="text-sm font-semibold">Automat na jízdenky</span>
+                <span class="font-bold mt-1">{{ stop.has_ticket_machine ? 'Ano' : 'Ne' }}</span>
+              </div>
 
-            <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
-                 :class="stop.has_display ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1">🖥️</span>
-              <span class="text-sm font-semibold">Display</span>
-              <span class="font-bold mt-1">{{ stop.has_display ? 'Ano' : 'Ne' }}</span>
-            </div>
+              <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
+                   :class="stop.has_display ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
+                <span class="text-2xl mb-1">🖥️</span>
+                <span class="text-sm font-semibold">Displej</span>
+                <span class="font-bold mt-1">{{ stop.has_display ? 'Ano' : 'Ne' }}</span>
+              </div>
 
-            <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
-                 :class="stop.has_bench ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1">🪑</span>
-              <span class="text-sm font-semibold">Lavička</span>
-              <span class="font-bold mt-1">{{ stop.has_bench ? 'Ano' : 'Ne' }}</span>
+              <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
+                   :class="stop.has_bench ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
+                <span class="text-2xl mb-1">🪑</span>
+                <span class="text-sm font-semibold">Lavička</span>
+                <span class="font-bold mt-1">{{ stop.has_bench ? 'Ano' : 'Ne' }}</span>
+              </div>
+
+              <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
+                   :class="stop.is_transfer ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
+                <span class="text-2xl mb-1">🔁</span>
+                <span class="text-sm font-semibold">Přestupní uzel</span>
+                <span class="font-bold mt-1">{{ stop.is_transfer ? 'Ano' : 'Ne' }}</span>
+              </div>
             </div>
           </div>
         </div>
