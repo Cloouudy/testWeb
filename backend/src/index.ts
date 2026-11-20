@@ -449,7 +449,7 @@ app.listen(port, "0.0.0.0", () => {
       const name = cols[1].trim();
       const stopLines = cols[2].trim();
       const isTransfer = parseBool(cols[3]);
-      const transfer_lines = cols[4].trim();
+      const transfer_lines = cols[4];
       const x = Number(cols[5]);
       const y = Number(cols[6]);
       const wheelchairAccessible = parseBool(cols[7]);
@@ -463,7 +463,7 @@ app.listen(port, "0.0.0.0", () => {
         `INSERT INTO stops (
           id, name, stop_lines, is_transfer, transfer_lines, x, y,
           wheelchair_accessible, has_shelter, has_bench, has_ticket_machine, has_display, image_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           name,
