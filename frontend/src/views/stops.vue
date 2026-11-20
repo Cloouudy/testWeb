@@ -74,6 +74,11 @@
               <input type="checkbox" v-model="filters.ticketMachine" class="hidden" />
               <span>🎫 Jízdenkový automat</span>
             </label>
+            <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
+                   :class="filters.transfer ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
+              <input type="checkbox" v-model="filters.transfer" class="hidden" />
+              <span>🔄 Přestupní zastávka</span>
+            </label>
           </div>
         </div>
       </div>
@@ -153,6 +158,7 @@ const filters = reactive({
   wheelchair: false,
   shelter: false,
   ticketMachine: false,
+  transfer: false,
 })
 
 const hasActiveFilters = computed(() => {
@@ -164,6 +170,7 @@ const resetFilters = () => {
   filters.wheelchair = false
   filters.shelter = false
   filters.ticketMachine = false
+  filters.transfer = false
 }
 
 const normalizeText = (text) => {
@@ -176,6 +183,7 @@ const filteredStops = computed(() => {
     if (filters.wheelchair && !stop.wheelchair_accessible) return false
     if (filters.shelter && !stop.has_shelter) return false
     if (filters.ticketMachine && !stop.has_ticket_machine) return false
+    if (filters.transfer && !stop.is_transfer) return false
 
     const query = normalizeText(searchQuery.value.trim())
     if (query) {

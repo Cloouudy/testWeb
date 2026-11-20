@@ -29,9 +29,6 @@ app.use(
   }
 );
 
-
-
-
 // Middleware pro ověření administrátorského API klíče (Bearer schéma)
 function requireAdminAuth(
   req: express.Request,
@@ -69,15 +66,23 @@ function toCamelCase(text: string): string {
     .join("");
 }
 
+function parsePositiveIntId(rawId: unknown): number | null {
+  if (typeof rawId !== "string" || !/^[1-9]\d*$/.test(rawId)) {
+    return null;
+  }
+  const id = Number(rawId);
+  return Number.isSafeInteger(id) ? id : null;
+}
+
 // Převedení boolean z 0/1 (MySQL) na formát přesně podle Swaggeru
 function formatStop(row: RowDataPacket) {
   return {
     id: Number(row.id),
     name: String(row.name),
     image_url: row.image_url ?? null,
-    stop_lines: String(row.stop_lines),
+    stop_lines: String(row.stop_lines ?? ""),
     is_transfer: Boolean(row.is_transfer),
-    transfer_lines: String(row.transfer_lines),
+    transfer_lines: String(row.transfer_lines ?? ""),
     wheelchair_accessible: Boolean(row.wheelchair_accessible),
     has_bench: Boolean(row.has_bench),
     has_shelter: Boolean(row.has_shelter),
@@ -86,13 +91,14 @@ function formatStop(row: RowDataPacket) {
   };
 }
 
-// Validace ID v URL (musí být celé číslo >= 1)
-function parseStopId(rawId: unknown): number | null {
-  if (typeof rawId !== "string" || !/^[1-9]\d*$/.test(rawId)) {
-    return null;
-  }
-  const id = Number(rawId);
-  return Number.isSafeInteger(id) ? id : null;
+function formatLine(row: RowDataPacket) {
+  return {
+    id: Number(row.id),
+    number: String(row.number),
+    name: String(row.name),
+    type: String(row.type),
+    color: String(row.color),
+  };
 }
 
 // Validace vstupního těla StopInput podle Swaggeru
@@ -103,17 +109,14 @@ function validateStopInput(body: unknown): {
   is_transfer: boolean;
   transfer_lines: string;
   wheelchair_accessible: boolean;
-  has_bench: boolean,
+  has_bench: boolean;
   has_shelter: boolean;
   has_ticket_machine: boolean;
-  has_display: boolean
+  has_display: boolean;
 } | null {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return null;
   }
-
-
-
 
   const record = body as Record<string, unknown>;
   const allowedKeys = new Set([
@@ -126,7 +129,7 @@ function validateStopInput(body: unknown): {
     "has_bench",
     "has_shelter",
     "has_ticket_machine",
-    "has_display"
+    "has_display",
   ]);
 
   // Zákaz polí, která nejsou ve specifikaci (additionalProperties: false)
@@ -146,7 +149,7 @@ function validateStopInput(body: unknown): {
     has_bench,
     has_shelter,
     has_ticket_machine,
-    has_display
+    has_display,
   } = record;
 
   // 1. Validace name (neprázdný string max 255 znaků)
@@ -158,21 +161,16 @@ function validateStopInput(body: unknown): {
     return null;
   }
 
-
   if (
     typeof stop_lines !== "string" ||
     stop_lines.trim().length === 0 ||
     stop_lines.length > 20
   ) {
-    return null
+    return null;
   }
 
-  if (
-    typeof transfer_lines !== "string" ||
-    stop_lines.trim().length === 0 ||
-    stop_lines.length > 20
-  ) {
-    return null
+  if (typeof transfer_lines !== "string" || transfer_lines.length > 20) {
+    return null;
   }
 
   // 2. Validace boolean polí
@@ -182,7 +180,7 @@ function validateStopInput(body: unknown): {
     typeof has_shelter !== "boolean" ||
     typeof has_ticket_machine !== "boolean" ||
     typeof is_transfer !== "boolean" ||
-    typeof has_display !== "boolean" 
+    typeof has_display !== "boolean"
   ) {
     return null;
   }
@@ -211,7 +209,45 @@ function validateStopInput(body: unknown): {
     has_bench,
     has_shelter,
     has_ticket_machine,
-    has_display
+    has_display,
+  };
+}
+
+function validateLineInput(body: unknown): {
+  number: string;
+  name: string;
+  type: string;
+  color: string;
+} | null {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return null;
+  }
+
+  const record = body as Record<string, unknown>;
+  const { number, name, type, color } = record;
+
+  if (
+    typeof number !== "string" ||
+    number.trim().length === 0 ||
+    number.length > 255 ||
+    typeof name !== "string" ||
+    name.trim().length === 0 ||
+    name.length > 255 ||
+    typeof type !== "string" ||
+    type.trim().length === 0 ||
+    type.length > 50 ||
+    typeof color !== "string" ||
+    color.trim().length === 0 ||
+    color.length > 20
+  ) {
+    return null;
+  }
+
+  return {
+    number: number.trim(),
+    name: name.trim(),
+    type: type.trim(),
+    color: color.trim(),
   };
 }
 
@@ -247,7 +283,7 @@ app.get("/api/v1/stops", async (_req, res) => {
 
 // 2. GET /api/v1/stops/:id – detail konkrétní zastávky (200 / 400 / 404) – VEŘEJNÉ
 app.get("/api/v1/stops/:id", async (req, res) => {
-  const id = parseStopId(req.params.id);
+  const id = parsePositiveIntId(req.params.id);
   if (id === null) {
     return res.status(400).json({ error: "Invalid stop ID" });
   }
@@ -267,6 +303,39 @@ app.get("/api/v1/stops/:id", async (req, res) => {
   }
 });
 
+// Linky obsluhující konkrétní zastávku
+app.get("/api/v1/stops/:id/lines", async (req, res) => {
+  const stopId = parsePositiveIntId(req.params.id);
+  if (stopId === null) {
+    return res.status(400).json({ error: "Invalid stop ID" });
+  }
+
+  try {
+    const [stopRows] = await db.execute<RowDataPacket[]>(
+      "SELECT id FROM stops WHERE id = ?",
+      [stopId]
+    );
+    if (stopRows.length === 0) {
+      return res.status(404).json({ error: "Stop not found" });
+    }
+
+    const [rows] = await db.execute<RowDataPacket[]>(
+      `SELECT DISTINCT l.id, l.\`number\`, l.name, l.\`type\`, l.color
+       FROM \`lines\` l
+       JOIN trips t ON t.line_id = l.id
+       JOIN trip_stops ts ON ts.trip_id = t.id
+       WHERE ts.stop_id = ?
+       ORDER BY l.id`,
+      [stopId]
+    );
+
+    res.status(200).json(rows.map(formatLine));
+  } catch (error) {
+    console.error("Chyba při čtení linek pro zastávku:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // 3. POST /api/v1/stops – vytvoření nové zastávky (201 / 400 / 401) – CHRÁNĚNÉ
 app.post("/api/v1/stops", requireAdminAuth, async (req, res) => {
   const data = validateStopInput(req.body);
@@ -276,14 +345,21 @@ app.post("/api/v1/stops", requireAdminAuth, async (req, res) => {
 
   try {
     const [result] = await db.execute<ResultSetHeader>(
-      `INSERT INTO stops (name, image_url, wheelchair_accessible, has_shelter, has_ticket_machine)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO stops (
+        name, image_url, stop_lines, is_transfer, transfer_lines,
+        wheelchair_accessible, has_bench, has_shelter, has_ticket_machine, has_display
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.name,
         data.image_url,
+        data.stop_lines,
+        data.is_transfer,
+        data.transfer_lines,
         data.wheelchair_accessible,
+        data.has_bench,
         data.has_shelter,
         data.has_ticket_machine,
+        data.has_display,
       ]
     );
 
@@ -301,7 +377,7 @@ app.post("/api/v1/stops", requireAdminAuth, async (req, res) => {
 
 // 4. PUT /api/v1/stops/:id – nahrazení údajů existující zastávky (200 / 400 / 401 / 404) – CHRÁNĚNÉ
 app.put("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
-  const id = parseStopId(req.params.id);
+  const id = parsePositiveIntId(req.params.id);
   if (id === null) {
     return res.status(400).json({ error: "Invalid stop ID" });
   }
@@ -314,14 +390,20 @@ app.put("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
   try {
     const [result] = await db.execute<ResultSetHeader>(
       `UPDATE stops
-       SET name = ?, image_url = ?, wheelchair_accessible = ?, has_shelter = ?, has_ticket_machine = ?
+       SET name = ?, image_url = ?, stop_lines = ?, is_transfer = ?, transfer_lines = ?,
+           wheelchair_accessible = ?, has_bench = ?, has_shelter = ?, has_ticket_machine = ?, has_display = ?
        WHERE id = ?`,
       [
         data.name,
         data.image_url,
+        data.stop_lines,
+        data.is_transfer,
+        data.transfer_lines,
         data.wheelchair_accessible,
+        data.has_bench,
         data.has_shelter,
         data.has_ticket_machine,
+        data.has_display,
         id,
       ]
     );
@@ -343,7 +425,7 @@ app.put("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
 
 // 5. DELETE /api/v1/stops/:id – odstranění zastávky (204 / 400 / 401 / 404) – CHRÁNĚNÉ
 app.delete("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
-  const id = parseStopId(req.params.id);
+  const id = parsePositiveIntId(req.params.id);
   if (id === null) {
     return res.status(400).json({ error: "Invalid stop ID" });
   }
@@ -365,11 +447,161 @@ app.delete("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
   }
 });
 
+// --- Endpointy pro linky ---
+
+// Seznam všech linek
+app.get("/api/v1/lines", async (_req, res) => {
+  try {
+    const [rows] = await db.query<RowDataPacket[]>(
+      "SELECT id, `number`, name, `type`, color FROM `lines` ORDER BY id"
+    );
+    res.status(200).json(rows.map(formatLine));
+  } catch (error) {
+    console.error("Chyba při čtení linek z DB:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Detail linky včetně směrů (trips) a zastávek ve správném pořadí
+app.get("/api/v1/lines/:id", async (req, res) => {
+  const id = parsePositiveIntId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ error: "Invalid line ID" });
+  }
+
+  try {
+    const [lineRows] = await db.execute<RowDataPacket[]>(
+      "SELECT id, `number`, name, `type`, color FROM `lines` WHERE id = ?",
+      [id]
+    );
+    if (lineRows.length === 0) {
+      return res.status(404).json({ error: "Line not found" });
+    }
+
+    const [tripRows] = await db.execute<RowDataPacket[]>(
+      "SELECT id, line_id, direction FROM trips WHERE line_id = ? ORDER BY id",
+      [id]
+    );
+
+    const tripsWithStops = [];
+    for (const trip of tripRows) {
+      const [stopRows] = await db.execute<RowDataPacket[]>(
+        `SELECT s.*, ts.stop_order
+         FROM trip_stops ts
+         JOIN stops s ON s.id = ts.stop_id
+         WHERE ts.trip_id = ?
+         ORDER BY ts.stop_order ASC`,
+        [trip.id]
+      );
+
+      tripsWithStops.push({
+        id: Number(trip.id),
+        line_id: Number(trip.line_id),
+        direction: String(trip.direction),
+        stops: stopRows.map((s) => ({
+          ...formatStop(s),
+          order: Number(s.stop_order),
+        })),
+      });
+    }
+
+    res.status(200).json({
+      ...formatLine(lineRows[0]),
+      trips: tripsWithStops,
+    });
+  } catch (error) {
+    console.error("Chyba při čtení detailu linky:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Vytvoření nové linky
+app.post("/api/v1/lines", requireAdminAuth, async (req, res) => {
+  const data = validateLineInput(req.body);
+  if (!data) {
+    return res.status(400).json({ error: "Invalid input data" });
+  }
+
+  try {
+    const [result] = await db.execute<ResultSetHeader>(
+      "INSERT INTO `lines` (`number`, name, `type`, color) VALUES (?, ?, ?, ?)",
+      [data.number, data.name, data.type, data.color]
+    );
+
+    const [rows] = await db.execute<RowDataPacket[]>(
+      "SELECT id, `number`, name, `type`, color FROM `lines` WHERE id = ?",
+      [result.insertId]
+    );
+
+    res.status(201).json(formatLine(rows[0]));
+  } catch (error) {
+    console.error("Chyba při vytváření linky:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Úprava existující linky
+app.put("/api/v1/lines/:id", requireAdminAuth, async (req, res) => {
+  const id = parsePositiveIntId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ error: "Invalid line ID" });
+  }
+
+  const data = validateLineInput(req.body);
+  if (!data) {
+    return res.status(400).json({ error: "Invalid input data" });
+  }
+
+  try {
+    const [result] = await db.execute<ResultSetHeader>(
+      "UPDATE `lines` SET `number` = ?, name = ?, `type` = ?, color = ? WHERE id = ?",
+      [data.number, data.name, data.type, data.color, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Line not found" });
+    }
+
+    const [rows] = await db.execute<RowDataPacket[]>(
+      "SELECT id, `number`, name, `type`, color FROM `lines` WHERE id = ?",
+      [id]
+    );
+    res.status(200).json(formatLine(rows[0]));
+  } catch (error) {
+    console.error("Chyba při úpravě linky:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Smazání linky
+app.delete("/api/v1/lines/:id", requireAdminAuth, async (req, res) => {
+  const id = parsePositiveIntId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ error: "Invalid line ID" });
+  }
+
+  try {
+    const [result] = await db.execute<ResultSetHeader>(
+      "DELETE FROM `lines` WHERE id = ?",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Line not found" });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Chyba při mazání linky:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 async function start() {
   const port = Number(process.env.PORT ?? 3001);
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
-});
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Server running on port ${port}`);
+  });
 
   // Připojení k DB na pozadí
   for (let attempt = 1; ; attempt++) {
@@ -449,7 +681,7 @@ app.listen(port, "0.0.0.0", () => {
       const name = cols[1].trim();
       const stopLines = cols[2].trim();
       const isTransfer = parseBool(cols[3]);
-      const transfer_lines = cols[4];
+      const transfer_lines = (cols[4] ?? "").trim();
       const x = Number(cols[5]);
       const y = Number(cols[6]);
       const wheelchairAccessible = parseBool(cols[7]);
@@ -485,15 +717,147 @@ app.listen(port, "0.0.0.0", () => {
     console.log(`Seed dokončen: uloženo ${lines.length} zastávek.`);
   }
 
-   await db.query(`
-    CREATE TABLE IF NOT EXISTS linky (
+  // 4. Tabulka pro linky
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS \`lines\` (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      number VARCHAR(255) NOT NULL,
+      \`number\` VARCHAR(255) NOT NULL,
       name VARCHAR(255) NOT NULL,
-      type VARCHAR(50) NOT NULL,
+      \`type\` VARCHAR(50) NOT NULL,
       color VARCHAR(20) NOT NULL
-    )`);
+    )
+  `);
 
+  // 5. Tabulka pro směry / jízdy linek
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS trips (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      line_id INT NOT NULL,
+      direction ENUM('outbound', 'inbound') NOT NULL,
+      CONSTRAINT fk_trips_line
+        FOREIGN KEY (line_id) REFERENCES \`lines\`(id)
+        ON DELETE CASCADE
+    )
+  `);
+
+  // 6. Vazební tabulka trasa <-> zastávka + pořadí na trase
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS trip_stops (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      trip_id INT NOT NULL,
+      stop_id INT NOT NULL,
+      stop_order INT NOT NULL,
+      UNIQUE KEY uq_trip_order (trip_id, stop_order),
+      CONSTRAINT fk_trip_stops_trip
+        FOREIGN KEY (trip_id) REFERENCES trips(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_trip_stops_stop
+        FOREIGN KEY (stop_id) REFERENCES stops(id)
+        ON DELETE CASCADE
+    )
+  `);
+
+  // 7. Seed sítě z mapy (pokud tabulka lines zatím neobsahuje data)
+  const [existingLines] = await db.query<RowDataPacket[]>(
+    "SELECT COUNT(*) as count FROM `lines`"
+  );
+  if (existingLines[0].count === 0) {
+    const [allStops] = await db.query<RowDataPacket[]>(
+      "SELECT id, name FROM stops"
+    );
+    const stopIdByName = new Map<string, number>();
+    for (const s of allStops) {
+      stopIdByName.set(String(s.name).trim(), Number(s.id));
+    }
+
+    const networkSeed = [
+      {
+        number: "A",
+        name: "Green Line",
+        type: "metro",
+        color: "#16A34A",
+        stops: [
+          "Turing Terminal",
+          "Ada Exchange",
+          "Pixel Park",
+          "Byte Square",
+          "Stack Garden",
+        ],
+      },
+      {
+        number: "B",
+        name: "Yellow Line",
+        type: "metro",
+        color: "#EAB308",
+        stops: [
+          "Hopper Hall",
+          "Ada Exchange",
+          "Compiler Court",
+          "Kernel Hub",
+          "Syntax Square",
+          "Lambda Lane",
+          "Campus Gate",
+        ],
+      },
+      {
+        number: "C",
+        name: "Red Line",
+        type: "metro",
+        color: "#EF4444",
+        stops: [
+          "Edison East",
+          "Notebook Quay",
+          "Kernel Hub",
+          "Library Loop",
+          "Byte Square",
+          "Quantum Commons",
+        ],
+      },
+    ];
+
+    for (const lineDef of networkSeed) {
+      const [lineRes] = await db.execute<ResultSetHeader>(
+        "INSERT INTO `lines` (`number`, name, `type`, color) VALUES (?, ?, ?, ?)",
+        [lineDef.number, lineDef.name, lineDef.type, lineDef.color]
+      );
+      const lineId = lineRes.insertId;
+
+      const directions: Array<{
+        dir: "outbound" | "inbound";
+        orderedStops: string[];
+      }> = [
+        { dir: "outbound", orderedStops: lineDef.stops },
+        { dir: "inbound", orderedStops: [...lineDef.stops].reverse() },
+      ];
+
+      for (const { dir, orderedStops } of directions) {
+        const [tripRes] = await db.execute<ResultSetHeader>(
+          "INSERT INTO trips (line_id, direction) VALUES (?, ?)",
+          [lineId, dir]
+        );
+        const tripId = tripRes.insertId;
+
+        for (let i = 0; i < orderedStops.length; i++) {
+          const stopName = orderedStops[i];
+          const stopId = stopIdByName.get(stopName);
+          if (!stopId) {
+            console.warn(
+              `Zastávka "${stopName}" nebyla při seedu linek nalezena v tabulce stops.`
+            );
+            continue;
+          }
+          await db.execute(
+            "INSERT INTO trip_stops (trip_id, stop_id, stop_order) VALUES (?, ?, ?)",
+            [tripId, stopId, i + 1]
+          );
+        }
+      }
+    }
+
+    console.log(
+      "Seed dopravní sítě (linky A, B, C, směry outbound/inbound a zastávky) dokončen."
+    );
+  }
 }
 
 start();
