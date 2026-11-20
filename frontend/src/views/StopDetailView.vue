@@ -71,14 +71,14 @@
 
             <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
                  :class="stop.has_display ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1"></span>
+              <span class="text-2xl mb-1">🖥️</span>
               <span class="text-sm font-semibold">Display</span>
               <span class="font-bold mt-1">{{ stop.has_display ? 'Ano' : 'Ne' }}</span>
             </div>
 
             <div class="p-4 rounded-xl border flex flex-col items-center text-center transition-all"
                  :class="stop.has_bench ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'">
-              <span class="text-2xl mb-1"></span>
+              <span class="text-2xl mb-1">🪑</span>
               <span class="text-sm font-semibold">Lavička</span>
               <span class="font-bold mt-1">{{ stop.has_bench ? 'Ano' : 'Ne' }}</span>
             </div>

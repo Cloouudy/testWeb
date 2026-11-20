@@ -468,6 +468,16 @@ app.listen(port, "0.0.0.0", () => {
 
     console.log(`Seed dokončen: uloženo ${lines.length} zastávek.`);
   }
+
+   await db.query(`
+    CREATE TABLE IF NOT EXISTS linky (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      number VARCHAR(255) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      color VARCHAR(20) NOT NULL
+      `);
+
 }
 
 start();
