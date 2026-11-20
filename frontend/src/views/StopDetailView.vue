@@ -26,7 +26,7 @@
         <div class="h-80 w-full relative bg-gray-200">
           <img :src="stop.image_url" :alt="stop.name" class="w-full h-full object-cover" @error="handleImageError" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end p-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-white">{{ stop.name }}</h1>
+            <h1 class="text-4xl md:text-5xl font-bold text-lg">{{ stop.stop_lines }}</h1><h1 class="text-4xl md:text-5xl font-bold text-white">{{ stop.name }}</h1>
           </div>
         </div>
 
