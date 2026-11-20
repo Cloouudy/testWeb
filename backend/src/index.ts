@@ -367,9 +367,9 @@ app.delete("/api/v1/stops/:id", requireAdminAuth, async (req, res) => {
 
 async function start() {
   const port = Number(process.env.PORT ?? 3001);
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Server running on port ${port}`);
+});
 
   // Připojení k DB na pozadí
   for (let attempt = 1; ; attempt++) {
