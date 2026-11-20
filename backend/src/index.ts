@@ -77,6 +77,7 @@ function formatStop(row: RowDataPacket) {
     image_url: row.image_url ?? null,
     stop_lines: String(row.stop_lines),
     is_transfer: Boolean(row.is_transfer),
+    transfer_lines: String(row.transfer_lines),
     wheelchair_accessible: Boolean(row.wheelchair_accessible),
     has_bench: Boolean(row.has_bench),
     has_shelter: Boolean(row.has_shelter),
@@ -100,6 +101,7 @@ function validateStopInput(body: unknown): {
   image_url: string | null;
   stop_lines: string;
   is_transfer: boolean;
+  transfer_lines: string;
   wheelchair_accessible: boolean;
   has_bench: boolean,
   has_shelter: boolean;
@@ -119,6 +121,7 @@ function validateStopInput(body: unknown): {
     "image_url",
     "stop_lines",
     "is_transfer",
+    "transfer_lines",
     "wheelchair_accessible",
     "has_bench",
     "has_shelter",
@@ -138,6 +141,7 @@ function validateStopInput(body: unknown): {
     image_url,
     stop_lines,
     is_transfer,
+    transfer_lines,
     wheelchair_accessible,
     has_bench,
     has_shelter,
@@ -158,7 +162,15 @@ function validateStopInput(body: unknown): {
   if (
     typeof stop_lines !== "string" ||
     stop_lines.trim().length === 0 ||
-    stop_lines.length > 30
+    stop_lines.length > 20
+  ) {
+    return null
+  }
+
+  if (
+    typeof transfer_lines !== "string" ||
+    stop_lines.trim().length === 0 ||
+    stop_lines.length > 20
   ) {
     return null
   }
@@ -194,6 +206,7 @@ function validateStopInput(body: unknown): {
     image_url: normalizedImageUrl,
     stop_lines,
     is_transfer,
+    transfer_lines,
     wheelchair_accessible,
     has_bench,
     has_shelter,
@@ -401,6 +414,7 @@ app.listen(port, "0.0.0.0", () => {
       name VARCHAR(255) NOT NULL,
       stop_lines VARCHAR(20) NOT NULL DEFAULT '',
       is_transfer BOOLEAN NOT NULL DEFAULT FALSE,
+      transfer_lines VARCHAR(20) DEFAULT '',
       x DOUBLE NOT NULL DEFAULT 0,
       y DOUBLE NOT NULL DEFAULT 0,
       wheelchair_accessible BOOLEAN NOT NULL DEFAULT FALSE,
@@ -435,6 +449,7 @@ app.listen(port, "0.0.0.0", () => {
       const name = cols[1].trim();
       const stopLines = cols[2].trim();
       const isTransfer = parseBool(cols[3]);
+      const transfer_lines = cols[4].trim();
       const x = Number(cols[5]);
       const y = Number(cols[6]);
       const wheelchairAccessible = parseBool(cols[7]);
@@ -446,7 +461,7 @@ app.listen(port, "0.0.0.0", () => {
 
       await db.execute(
         `INSERT INTO stops (
-          id, name, stop_lines, is_transfer, x, y,
+          id, name, stop_lines, is_transfer, transfer_lines, x, y,
           wheelchair_accessible, has_shelter, has_bench, has_ticket_machine, has_display, image_url
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -454,6 +469,7 @@ app.listen(port, "0.0.0.0", () => {
           name,
           stopLines,
           isTransfer,
+          transfer_lines,
           x,
           y,
           wheelchairAccessible,
