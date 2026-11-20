@@ -7,19 +7,17 @@ const status = ref('Načítám...')
 
 onMounted(async () => {
   try {
-    // pozadavek GET 
-    const response = await fetch('/api/v1/health');
-    const data = await response.json();
+    const response = await fetch('/api/v1/health')
+    const data = await response.json()
 
-    status.value = data.status.toUpperCase();
+    status.value = data.status.toUpperCase()
 
-    // data z DB
     const teamRes = await fetch('/api/v1/team')
     const teamData = await teamRes.json()
     teamInfo.value = teamData
   } catch (error) {
     status.value = 'Chyba'
-    console.error("Chyba při načítání dat o týmu:", error)
+    console.error('Chyba při načítání dat o týmu:', error)
   }
 })
 </script>
@@ -36,7 +34,7 @@ onMounted(async () => {
       </div>
     </header>
 
-    <main class="flex-1">
+    <main class="flex-1 flex flex-col">
       <router-view />
     </main>
 

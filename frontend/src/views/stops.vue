@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full min-h-screen bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
-    <div class="w-full">
+  <div class="w-full flex-1 flex flex-col bg-gray-50 font-['Dosis'] text-[#1A1A1A] px-6 py-8 md:px-12">
+    <div class="w-full flex-1 flex flex-col">
       <!-- Hlavička s oficiálním logem / ikonou -->
       <header class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200 pb-6">
         <div class="flex items-center gap-4">
@@ -74,6 +74,7 @@
               <input type="checkbox" v-model="filters.ticketMachine" class="hidden" />
               <span>🎫 Jízdenkový automat</span>
             </label>
+
             <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all select-none"
                    :class="filters.transfer ? 'bg-[#0070BB]/10 border-[#0070BB] text-[#0070BB] font-bold' : 'bg-gray-50 border-gray-200 text-gray-700 hover:border-gray-300'">
               <input type="checkbox" v-model="filters.transfer" class="hidden" />
@@ -84,34 +85,38 @@
       </div>
 
       <!-- Načítání -->
-      <div v-if="loading" class="text-center py-16 text-2xl font-semibold text-[#0070BB]">
+      <div v-if="loading" class="flex-1 flex items-center justify-center py-16 text-2xl font-semibold text-[#0070BB]">
         Načítám zastávky...
       </div>
 
       <!-- Prázdný stav (žádná data v DB) -->
-      <div v-else-if="stops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
-        <h2 class="text-2xl font-bold mb-2">Zatím zde nejsou žádné zastávky</h2>
-        <p class="text-gray-500 text-lg">V systému se nenašly žádné evidované zastávky.</p>
+      <div v-else-if="stops.length === 0" class="flex-1 flex items-center justify-center">
+        <div class="w-full max-w-2xl bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
+          <h2 class="text-2xl font-bold mb-2">Zatím zde nejsou žádné zastávky</h2>
+          <p class="text-gray-500 text-lg">V systému se nenašly žádné evidované zastávky.</p>
+        </div>
       </div>
 
       <!-- Nenalezena žádná zastávka po filtrování / vyhledávání -->
-      <div v-else-if="filteredStops.length === 0" class="w-full bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
-        <div class="text-5xl mb-4">🔍</div>
-        <h2 v-if="searchQuery.trim()" class="text-2xl font-bold mb-2 text-[#1A1A1A]">
-          Nenalezena žádná zastávka „{{ searchQuery.trim() }}“
-        </h2>
-        <h2 v-else class="text-2xl font-bold mb-2 text-[#1A1A1A]">
-          Nenalezena žádná zastávka
-        </h2>
-        <p class="text-gray-500 text-lg mb-6">
-          Zkuste upravit hledaný výraz nebo změnit vybrané filtry vybavení.
-        </p>
-        <button
-          @click="resetFilters"
-          class="px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl transition-colors cursor-pointer"
-        >
-          Resetovat vyhledávání a filtry ↺
-        </button>
+      <div v-else-if="filteredStops.length === 0" class="flex-1 flex items-center justify-center">
+        <div class="w-full max-w-2xl bg-white rounded-2xl shadow-md p-12 text-center border-2 border-[#0070BB]/20">
+          <div class="text-5xl mb-4">🔍</div>
+          <h2 v-if="searchQuery.trim()" class="text-2xl font-bold mb-2 text-[#1A1A1A]">
+            Nenalezena žádná zastávka „{{ searchQuery.trim() }}“
+          </h2>
+          <h2 v-else class="text-2xl font-bold mb-2 text-[#1A1A1A]">
+            Nenalezena žádná zastávka
+          </h2>
+          <p class="text-gray-500 text-lg mb-6">
+            Zkuste upravit hledaný výraz nebo změnit vybrané filtry vybavení.
+          </p>
+          <button
+            @click="resetFilters"
+            class="px-6 py-3 bg-[#0070BB] hover:bg-[#0257A5] text-white font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            Resetovat vyhledávání a filtry ↺
+          </button>
+        </div>
       </div>
 
       <!-- Seznam zastávek (karty) -->
@@ -123,9 +128,9 @@
           class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group"
         >
           <div class="h-44 overflow-hidden bg-gray-200 relative">
-            <img 
-              :src="stop.image_url" 
-              :alt="stop.name" 
+            <img
+              :src="stop.image_url"
+              :alt="stop.name"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               @error="handleImageError"
             />
