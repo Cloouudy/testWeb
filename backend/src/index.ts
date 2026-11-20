@@ -492,7 +492,7 @@ app.listen(port, "0.0.0.0", () => {
       name VARCHAR(255) NOT NULL,
       type VARCHAR(50) NOT NULL,
       color VARCHAR(20) NOT NULL
-      `);
+    )`);
 
 }
 
